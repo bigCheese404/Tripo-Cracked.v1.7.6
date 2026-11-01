@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tripo 3D Generator</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0b0c10;
+      --card-bg: #15161b;
+      --accent-yellow: #f5c518;
+      --text-main: #ffffff;
+      --text-muted: #9999a1;
+      --border-color: #272832;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background-color: var(--bg-color); color: var(--text-main); min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: 24px 16px; background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 0);
+      background-size: 24px 24px; position: relative;
+    }
+
+    /* Top Bar Header */
+    .top-bar {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .top-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    /* 1:1 Matching Credit Badge UI */
+    .credit-badge {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 28px;
+      padding: 6px 18px 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(8px);
+    }
+    .bolt-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background-color: var(--accent-yellow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 6px rgba(245, 197, 24, 0.4);
+    }
+    .bolt-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: #000000;
+    }
+    .credit-count {
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .hero { text-align: center; margin-top: 10px; margin-bottom: 24px; }
+    .hero .greeting { font-size: 15px; color: var(--text-muted); margin-bottom: 6px; }
+    .hero h1 { font-size: 28px; font-weight: 700; }
+    .tabs-container { display: flex; gap: 12px; margin-bottom: 24px; }
+    .tab-pill { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 22px; border-radius: 24px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .tab-pill.gold-pill { border-color: rgba(245, 197, 24, 0.4); color: var(--accent-yellow); }
+    .main-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 28px; width: 100%; max-width: 440px; padding: 20px; position: relative; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); }
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .edit-btn { background: transparent; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .media-box { width: 100%; height: 320px; background-color: #0b0c10; border-radius: 20px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px dashed #2d2e3a; }
+    .media-box input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 5; }
+    .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 16px; color: var(--text-muted); text-align: center; padding: 30px 20px; pointer-events: none; }
+    .plus-icon { font-size: 42px; font-weight: 300; color: var(--text-muted); line-height: 1; }
+    .preview-img { width: 100%; height: 100%; object-fit: contain; display: none; }
+    model-viewer { width: 100%; height: 100%; display: none; background-color: #0b0c10; }
+    .status-overlay { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); padding: 8px 18px; border-radius: 24px; font-size: 13px; color: var(--accent-yellow); display: none; z-index: 10; border: 1px solid rgba(245, 197, 24, 0.4); white-space: nowrap; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+    .icon-group { display: flex; gap: 10px; }
+    .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: #1c1d24; border: none; color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .action-container { width: 100%; max-width: 440px; margin-top: 20px; display: flex; align-items: center; gap: 12px; }
+    .generate-btn { flex: 1; background: var(--accent-yellow); color: #000000; border: none; border-radius: 36px; padding: 18px; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+    .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .settings-btn { width: 56px; height: 56px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-main); cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <img src="https://play-lh.googleusercontent.com/mCTV0zo4GUVJDrnSaOwDoXgfA7VJrmb71QZOY7-VboI7vCzIxE9vvlc8cfelF_COXHXx-9vxFYkA-HeQ_V9-RA=s0-br30" alt="Logo" class="top-logo">
+    <div class="credit-badge">
+      <div class="bolt-icon">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <span class="credit-count" id="coinBalance">999999</span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="greeting">Hi, Creator!</div>
+    <h1>What will you bring into 3D?</h1>
+  </div>
+
+  <div class="tabs-container">
+    <div class="tab-pill"><span>Image to 3D</span></div>
+    <div class="tab-pill gold-pill"><span>⚡ cracked service by: BigBagB3n</span></div>
+  </div>
+
+  <div class="main-card">
+    <div class="card-top">
+      <button class="edit-btn" onclick="triggerFileInput()">✏️ Edit</button>
+    </div>
+    <div class="media-box" id="mediaBox">
+      <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)">
+      <div class="upload-placeholder" id="placeholder">
+        <div class="plus-icon">+</div>
+        <p>Click or Drag photo here to generate 3D model</p>
+      </div>
+      <img id="imagePreview" class="preview-img" alt="Uploaded Image Preview">
+      <model-viewer id="modelViewer" camera-controls auto-rotate shadow-intensity="1" alt="3D Output Canvas"></model-viewer>
+      <div id="statusOverlay" class="status-overlay">Ready</div>
+    </div>
+    <div class="card-footer">
+      <div class="icon-group"><button class="icon-btn">💎</button><button class="icon-btn">🌐</button></div>
+      <div class="icon-group"><button class="icon-btn">🎲</button></div>
+    </div>
+  </div>
+
+  <div class="action-container">
+    <button class="generate-btn" id="generateBtn" onclick="runGeneration()">Generate ⚡ 3D</button>
+    <button class="settings-btn">⚙️</button>
+  </div>
+
+  <script>
+    let selectedFile = null;
+    let coins = 999999;
+    const imageInput = document.getElementById('imageInput');
+    const coinBalanceEl = document.getElementById('coinBalance');
+
+    function triggerFileInput() { imageInput.click(); }
+
+    function handleImageSelect(event) {
+      const file = event.target.files[0] || (event.dataTransfer && event.dataTransfer.files[0]);
+      if (!file) return;
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('imagePreview').src = e.target.result;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('modelViewer').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function runGeneration() {
+      const statusOverlay = document.getElementById('statusOverlay');
+      const generateBtn = document.getElementById('generateBtn');
+      const modelViewer = document.getElementById('modelViewer');
+      const imagePreview = document.getElementById('imagePreview');
+
+      if (!selectedFile) {
+        alert("Please choose an image file first!");
+        return;
+      }
+
+      if (coins < 1) {
+        alert("Not enough credits!");
+        return;
+      }
+
+      // Deduct 1 coin on trigger
+      coins -= 1;
+      coinBalanceEl.innerText = coins;
+
+      const setStatus = (text) => {
+        statusOverlay.style.display = 'block';
+        statusOverlay.innerText = text;
+      };
+
+      try {
+        generateBtn.disabled = true;
+
+        // Spoof Security Handshake
+        setStatus("spoofing TripoAI API key signature...");
+        await new Promise(r => setTimeout(r, 1200));
+
+        setStatus("bypassing cloud gateway security...");
+        await new Promise(r => setTimeout(r, 1200));
+
+        setStatus("injecting payload headers...");
+        await new Promise(r => setTimeout(r, 1000));
+
+        setStatus("Uploading image asset...");
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+
+        const res = await fetch('/api/generate-3d', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.error || 'Failed to start task.');
+
+        const taskId = data.taskId;
+        setStatus("Initializing remote rendering pipeline...");
+
+        let isComplete = false;
+        let packetCounter = 1;
+
+        while (!isComplete) {
+          await new Promise(r => setTimeout(r, 3000));
+          const checkRes = await fetch(`/api/task-status/${taskId}`);
+          const checkData = await checkRes.json();
+
+          if (!checkData.success) throw new Error(checkData.error || 'Polling error.');
+
+          if (checkData.status === 'success') {
+            isComplete = true;
+            setStatus("Generation successful!");
+            imagePreview.style.display = 'none';
+            modelViewer.src = checkData.modelUrl;
+            modelViewer.style.display = 'block';
+            setTimeout(() => { statusOverlay.style.display = 'none'; }, 4000);
+          } else if (checkData.status === 'failed') {
+            throw new Error('Generation failed on remote nodes.');
+          } else {
+            const totalQueue = checkData.queuePosition || 22;
+            setStatus(`${packetCounter}/${totalQueue} packets received`);
+            packetCounter++;
+            if (packetCounter > totalQueue) packetCounter = totalQueue;
+          }
+        }
+      } catch (err) {
+        setStatus("Error: " + err.message);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
